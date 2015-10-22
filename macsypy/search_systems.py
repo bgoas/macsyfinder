@@ -227,6 +227,11 @@ class Cluster(object):
         clear = '?'
         if self.state == "clear":
             clear = ''
+        return "@@ --- Cluster {0} {1} ---\n@@ {2}\n@@ {3}\n@@ {4}".format(self.putative_system,
+                                                               clear,
+                                                               seq_ids,
+                                                               gene_names,
+                                                               pos)
         return "--- Cluster {0} {1} ---\n{2}\n{3}\n{4}".format(self.putative_system,
                                                                clear, 
                                                                seq_ids, 
@@ -320,7 +325,6 @@ class Cluster(object):
                 if y >= max_syst:
                     tmp_syst_name = x
                     max_syst = y
-
             self._putative_system = tmp_syst_name # Remove cause useless?
 
             # NEW Version with hits all "compatible" systems
@@ -574,25 +578,29 @@ class SystemOccurence(object):
         :return: Information of the component content of the SystemOccurence.
         :rtype: string
         """
-        out = ""
-        if self.mandatory_genes: 
-            out += "Mandatory genes: \n"
+        #out = ""
+        out = "@@ ============== begin pprint SystemOccurence ================\n"
+        out += "@@ system_name: {}\n".format(self.system_name)
+        if self.mandatory_genes:
+            out += "@@ ~~~~ Mandatory genes: ~~~~ \n"
             for k, g in self.mandatory_genes.iteritems():
-                out += "{0}\t{1:d}\n".format(k, g)
+                out += "@@ {0}\t{1:d}\n".format(k, g)
         if self.accessory_genes:
-            out += "Accessory genes: \n"
+            out += "@@ ~~~~ Accessory genes: ~~~~ \n"
             for k, g in self.accessory_genes.iteritems():
-                out += "{0}\t{1:d}\n".format(k, g)
+                out += "@@ {0}\t{1:d}\n".format(k, g)
         if self.forbidden_genes:
-            out += "Forbidden genes: \n"
+            out += "@@ ~~~~ Forbidden genes: ~~~~ \n"
             for k, g in self.forbidden_genes.iteritems():
                 out += "{0}\t{1:d}\n".format(k, g)
         # NEW
         if self.multi_syst_genes:
-            out += "Multi_syst genes:\n"
+            out += "@@ ~~~~ Multi_syst genes: ~~~~ \n"
             for k, g in self.multi_syst_genes.iteritems():
-                out += "{0}\t{1:d}\n".format(k, g)
+                out += "@@ {0}\t{1:d}\n".format(k, g)
+        out += "@@ ============== end pprint SystemOccurence ================\n"
         return out
+
 
     def get_gene_counter_output(self, forbid_exclude = False):
         """
@@ -610,6 +618,7 @@ class SystemOccurence(object):
             out += "\t{}"
         return out
 
+
     @property
     def state(self):
         """
@@ -617,6 +626,7 @@ class SystemOccurence(object):
         :rtype: string
         """
         return self._state
+
 
     def get_system_unique_name(self, replicon_name):
         """
@@ -631,6 +641,7 @@ class SystemOccurence(object):
         if not self.unique_name:
             self.unique_name = system_name_generator.getSystemName(replicon_name, self.system_name)
         return self.unique_name
+
 
     def get_system_name_unordered(self, suffix="_putative"):
         """
@@ -670,6 +681,7 @@ class SystemOccurence(object):
                 raise SystemDetectionError(msg)
         return length
 
+
     @property
     def nb_syst_genes(self):
         """
@@ -682,11 +694,14 @@ class SystemOccurence(object):
         """
         return self._nb_syst_genes
 
+
     def compute_nb_syst_genes(self):
         return self.count_genes(self.mandatory_genes) + self.count_genes(self.accessory_genes)
 
+
     def compute_nb_syst_genes_tot(self):
         return self.count_genes_tot(self.mandatory_genes) + self.count_genes_tot(self.accessory_genes)
+
 
     def count_genes(self, gene_dict):
         """
@@ -1774,6 +1789,21 @@ def analyze_clusters_replicon(clusters, systems, multi_systems_genes):
     :rtype: a list of :class:`macsypy.search_systems.SystemOccurence` 
 
     """
+    print "@@@@@@@@@@@@@@@@@@@@@@@@ CALL analyze_clusters_replicon @@@@@@@@@@@@@@@@@@@@@@@@@@"
+    print "@@ ============= with arguments ==============="
+    print "@@ details of clusters:"
+    print "@@ replicon_name",clusters.replicon_name
+    print "@@ ======== {} clusters ========".format(len(clusters.clusters))
+    for c in clusters.clusters:
+        print "@@", c
+        print "@@ ------------- "
+    print "@@ ======== {} systems ========".format(len(systems))
+    for s in systems:
+        print "@@", s
+    print "@@ ======== {} multi_systems_genes ========".format(len(multi_systems_genes))
+    for ms in multi_systems_genes:
+        print "@@",ms
+    print "@@ L1788 ===================== END of arguments ======================="
 
     # Global Hits collectors, for uncomplete cluster Hits
     systems_occurences_scattered = {}
@@ -1887,7 +1917,6 @@ def build_clusters(hits, systems_to_detect, rep_info):
     :return: a set of clusters and a dictionary with \"multi_system\" genes stored in a system-wise way for further utilization.
     :rtype: :class:`macsypy.search_systems.ClustersHandler`
     """
-
     _log.debug("Starting cluster detection with build_clusters... ")
 
     # Deals with different dataset types using Pipeline ?? 
@@ -1919,7 +1948,6 @@ def build_clusters(hits, systems_to_detect, rep_info):
 
     tmp = ""
     for cur in hits[1:]:
-
         _log.debug("Hit {0}".format(cur))
         #prev_max_dist = prev.get_syst_inter_gene_max_space()
         #cur_max_dist = cur.get_syst_inter_gene_max_space()
@@ -1949,7 +1977,7 @@ def build_clusters(hits, systems_to_detect, rep_info):
                 positions.append(prev.position)
                 # New : Storage of multi_system genes:
                 if prev.gene.multi_system:
-                    if not prev.system.name in multi_system_genes_system_wise.keys():
+                    if prev.system.fqn not in multi_system_genes_system_wise:
                         multi_system_genes_system_wise[prev.system.name] = []
                     multi_system_genes_system_wise[prev.system.name].append(prev)
 
@@ -1959,9 +1987,9 @@ def build_clusters(hits, systems_to_detect, rep_info):
                 positions.append(cur.position)
                 # New : Storage of multi_system genes:
                 if cur.gene.multi_system:
-                    if not cur.system.name in multi_system_genes_system_wise.keys():
+                    if cur.system.fqn not in multi_system_genes_system_wise:
                         multi_system_genes_system_wise[cur.system.name] = []
-                    multi_system_genes_system_wise[cur.system.name].append(cur)
+                    multi_system_genes_system_wise[cur.system.fqn].append(cur)
 
             if prev.gene.loner:
                 #print "trois - loner_state"
@@ -2000,10 +2028,9 @@ def build_clusters(hits, systems_to_detect, rep_info):
 
                     # New : Storage of multi_system genes:
                     if prev.gene.multi_system:
-                        if not prev.system.name in multi_system_genes_system_wise.keys():
+                        if prev.system.name not in multi_system_genes_system_wise:
                             multi_system_genes_system_wise[prev.system.name] = []
                         multi_system_genes_system_wise[prev.system.name].append(prev)
-
                     positions.append(prev.position)
                     loner_state = False
                     cur_cluster = Cluster(systems_to_detect)
@@ -2044,7 +2071,14 @@ def build_clusters(hits, systems_to_detect, rep_info):
         #for h in hitstoconsider:
         #    _log_out.info(h)
         clusters.circularize(rep_info, hitstoconsider, systems_to_detect)
-
+    print "@@ @@@@@@@@@@@@@@@@ BEGIN DEBUG build_clusters @@@@@@@@@@@@@@@@"
+    print "@@ details of clusters return by build_clusters"
+    print "@@ replicon_name",clusters.replicon_name
+    print "@@ ======== {} clusters ========".format(len(clusters.clusters))
+    for c in clusters.clusters:
+        print "@@", c
+        print "@@ ------------- "
+    print "@@ @@@@@@@@@@@@@@@@ END DEBUG build clusters @@@@@@@@@@@@@@@@"
     return (clusters, multi_system_genes_system_wise)
 
 def get_best_hits(hits, tosort=False, criterion="score"):
@@ -2160,15 +2194,18 @@ def search_systems(hits, systems, cfg):
         for k, g in itertools.groupby(hits, operator.attrgetter('replicon_name')):
             sub_hits = list(g)
             rep_info = rep_db[k]
-
             # The following applies to any "replicon"
-            (clusters, multi_syst_genes) = build_clusters(sub_hits, systems, rep_info)          
+            (clusters, multi_syst_genes) = build_clusters(sub_hits, systems, rep_info)
+            #for g in multi_syst_genes:
             _log_out.info("\n************************************\n Analyzing clusters for {0} \n************************************".format(k))
             # Make analyze_clusters_replicon return an object systemOccurenceReport?
             # Note: at this stage, ther is no control of which systems are looked for... But systemsOccurrence do not have to be created for systems not searched. 
             # 
             systems_occurences_list = analyze_clusters_replicon(clusters, systems, multi_syst_genes)  
-
+            print "@@@@@@@@@@@@@@ systems_occurences_list ({} so)@@@@@@@@@@@@@@".format(len(systems_occurences_list))
+            for so in systems_occurences_list:
+                print "@@ L2147 so:", so
+            print "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
             _log_out.info("******************************************")
             _log_out.info("Building reports for {0}: \n".format(k))
             report = systemDetectionReportOrdered(k, systems_occurences_list, cfg)
