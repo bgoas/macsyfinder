@@ -592,7 +592,7 @@ class SystemOccurence(object):
         if self.forbidden_genes:
             out += "@@ ~~~~ Forbidden genes: ~~~~ \n"
             for k, g in self.forbidden_genes.iteritems():
-                out += "{0}\t{1:d}\n".format(k, g)
+                out += "@@ {0}\t{1:d}\n".format(k, g)
         # NEW
         if self.multi_syst_genes:
             out += "@@ ~~~~ Multi_syst genes: ~~~~ \n"
